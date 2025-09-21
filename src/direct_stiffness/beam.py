@@ -1,0 +1,226 @@
+"""Module with a class for beam elements."""
+import warnings
+from collections.abc import Sequence
+
+import numpy as np
+
+from direct_stiffness import utils
+from direct_stiffness.cross_section import CrossSection
+
+__all__ = ["BeamElement"]
+
+
+class BeamElement():
+    """A flexible beam element."""
+
+    def __init__(self, cross_section, E, G, nu=None, idx=(1, 2),
+                 coords=((0, 0, 0), (1, 0, 0))):
+        if not isinstance(cross_section, CrossSection):
+            raise TypeError("Cross section must be a CrossSection instance "
+                            "from the direct_stiffness.cross_section module")
+
+        if not utils._validate_numeric(E, allow_neg=False, allow_zero=False):
+            raise ValueError("Young's modulus must be positive, non-zero "
+                             "scalar numeric value.")
+
+        if G is None:
+            if not utils._validate_numeric(nu, allow_neg=False,
+                                           allow_zero=False):
+                raise ValueError("Poisson's ratio must be positive, non-zero "
+                                 "scalar numeric value.")
+
+            # Calculate shear modulus assuming isotropic material
+            warnings.warn("Shear modulus calculated from young's modulus and "
+                          "poisson's ratio assuming ISOTROPIC material.")
+            G = E/2 * (1+nu)
+
+        if not isinstance(idx, Sequence):
+            raise TypeError("idx must be a sequence.")
+        if not len(idx) == 2:
+            raise ValueError("idx must be of length 2.")
+        if not all(isinstance(idx_i, (int, np.integer)) for idx_i in idx):
+            raise TypeError("All elements of idx must be integers")
+
+        coords = utils._validate_arraylike_numeric(coords, ndim=2)
+        if not coords.shape == (2, 3):
+            if coords.shape == (3, 2):
+                coords = coords.T
+            else:
+                raise ValueError("coords must be of shape (2, 3) or (3, 2).")
+        L = np.linalg.norm(np.diff(coords, axis=0))
+
+        if L == 0:
+            raise ValueError("Start and end node are identical.")
+
+        self._coords = coords
+        self._L = L
+        self._cross_section = cross_section
+        self._E = E
+        self._G = G
+        self._idx = tuple(idx)
+
+    @property
+    def cross_section(self):
+        """CrossSection : The beam cross section."""
+        return self._cross_section
+
+    @property
+    def coords(self):
+        """np.ndarray : The beam node coordinates."""
+        return self._coords
+
+    @property
+    def L(self):
+        """int | float | np.number : The beam length."""
+        return self._L
+
+    @property
+    def E(self):
+        """int | float | np.number : The beam's young's modulus."""
+        return self._E
+
+    @property
+    def G(self):
+        """int | float | np.number : The beam's shear modulus."""
+        return self._G
+
+    @property
+    def idx(self):
+        """tuple : The beam node indices."""
+        return self._idx
+
+    def stiffness_matrix(self, is_3d=True):
+        """Compute the stiffness matrix for a prismatic beam element.
+
+        Parameters
+        ----------
+        cross_section : CrossSection
+            Instance of a cross-section class (Rectangle, Circle, Pipe, etc.).
+        E : float
+            Young's modulus of the material.
+        G : float
+            Shear modulus of the material.
+        L : float
+            Length of the beam.
+        is_3d : bool, optional
+            If True, return the 12x12 3D beam stiffness matrix.
+            If False, return the 6x6 2D beam stiffness matrix.
+
+        Returns
+        -------
+        K : np.ndarray
+            Global stiffness matrix for the beam element.
+        """
+        A = self.cross_section.area
+        Ix = self.cross_section.ix
+        Iy = self.cross_section.iy
+        J = self.cross_section.j
+        L = self.L
+        E = self.E
+        G = self.G
+
+        if is_3d:
+            # 12x12 stiffness matrix for 3D beam (axial + torsion + bending)
+            K = np.zeros((12, 12))
+
+            # Axial terms
+            k_axial = E * A / L
+            K[0, 0] = K[6, 6] = k_axial
+            K[0, 6] = K[6, 0] = -k_axial
+
+            # Torsion terms
+            k_torsion = G * J / L
+            K[3, 3] = K[9, 9] = k_torsion
+            K[3, 9] = K[9, 3] = -k_torsion
+
+            # Bending about z-axis (Ix)
+            k_flex_z1 = E * Ix / L
+            k_flex_z2 = E * Ix / (L**2)
+            k_flex_z3 = E * Ix / (L**3)
+            K[1, 1] = K[7, 7] = 12 * k_flex_z3
+            K[1, 7] = K[7, 1] = -12 * k_flex_z3
+            K[1, 5] = K[5, 1] = 6 * k_flex_z2
+            K[1, 11] = K[11, 1] = 6 * k_flex_z2
+            K[5, 5] = 4 * k_flex_z1
+            K[5, 11] = K[11, 5] = 2 * k_flex_z1
+            K[11, 11] = 4 * k_flex_z1
+
+            # Bending about y-axis (Iy)
+            k_flex_y1 = E * Iy / L
+            k_flex_y2 = E * Iy / (L**2)
+            k_flex_y3 = E * Iy / (L**3)
+            K[2, 2] = K[8, 8] = 12 * k_flex_y3
+            K[2, 8] = K[8, 2] = -12 * k_flex_y3
+            K[2, 4] = K[4, 2] = -6 * k_flex_y2
+            K[2, 10] = K[10, 2] = -6 * k_flex_y2
+            K[4, 4] = 4 * k_flex_y1
+            K[4, 10] = K[10, 4] = 2 * k_flex_y1
+            K[10, 10] = 4 * k_flex_y1
+
+        else:
+            # 6x6 stiffness matrix for 2D beam (axial + bending)
+            K = np.zeros((6, 6))
+
+            k_axial = E * A / L
+            k_flex_1 = E * Ix / L
+            k_flex_2 = E * Ix / (L**2)
+            k_flex_3 = E * Ix / (L**3)
+
+            # Axial
+            K[0, 0] = K[3, 3] = k_axial
+            K[0, 3] = K[3, 0] = -k_axial
+
+            # Bending
+            K[1, 1] = K[4, 4] = 12 * k_flex_3
+            K[1, 4] = K[4, 1] = -12 * k_flex_3
+            K[1, 2] = K[2, 1] = 6 * k_flex_2
+            K[1, 5] = K[5, 1] = 6 * k_flex_2
+            K[2, 2] = K[5, 5] = 4 * k_flex_1
+            K[2, 5] = K[5, 2] = 2 * k_flex_1
+
+        return K
+
+    def rotation_matrix(self, is_3d=True):
+        """Compute the rotation matrix.
+
+        Parameters
+        ----------
+        is_3d : bool, optional
+            If True, compute 12x12 3D rotation matrix.\n
+            If False, compute 6x6 2D rotation matrix.\n
+            The default is True.
+
+
+        Returns
+        -------
+        R : np.ndarray
+            Rotation matrix for transforming element stiffness to global
+            coordinates.
+        """
+        delta = np.diff(self.coords, axis=0)
+        lx, ly, lz = delta / self.L
+        local_x = np.array([lx, ly, lz])
+
+        # Find local y and z directions using arbitrary reference vector
+        ref = np.array([0, 0, 1])
+        if np.isclose(abs(np.dot(local_x, ref)), 1.0):
+            # local_x is nearly parallel to ref → choose another reference
+            # direction
+            ref = np.array([0, 1, 0])
+        local_y = np.cross(ref, local_x)
+        local_y = local_y / np.linalg.norm(local_y)
+        local_z = np.cross(local_x, local_y)
+
+        T = np.vstack([local_x, local_y, local_z])
+
+        # Assemble rotation matrix
+        if is_3d:
+            R = np.zeros((12, 12))
+            for i in range(4):
+                R[i*3:(i+1)*3, i*3:(i+1)*3] = T
+        else:
+            R = np.zeros((6, 6))
+            for i in range(2):
+                R[i*3:(i+1)*3, i*3:(i+1)*3] = T
+
+        return R
