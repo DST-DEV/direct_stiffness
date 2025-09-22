@@ -68,6 +68,8 @@ class Rectangle(CrossSection):
             raise TypeError("Dimensions must be scalar numeric values.")
 
         self._dimensions = {}
+        # Check if dimension are complete (if only one dimension is given, a
+        # square is assumed)
         if kwargs.get("b") is None:
             if kwargs.get("h") is not None:
                 self._dimensions["b"] = kwargs["h"]
@@ -169,6 +171,8 @@ class Pipe(CrossSection):
             raise TypeError("Dimensions must be scalar numeric values.")
 
         self._dimensions = {}
+        # Check if dimensions are complete (either outer diameter & thickness,
+        # inner diameter & thickness or outer & inner diameter)
         if kwargs.get("di") is None:
             if any(kwargs.get(dim) is None for dim in ["do", "t"]):
                 raise ValueError("Incomplete dimensions.")
@@ -236,24 +240,52 @@ class RectangularPipe(CrossSection):
             raise TypeError("Dimensions must be scalar numeric values.")
 
         self._dimensions = {}
+        # Check if dimension are complete (either inner & outer dimensions,
+        # outer dimensions & thickness or inner dimensions & thickness)
         if any(kwargs.get(dim_i) is None for dim_i in ["bi", "hi"]):
-            if any(kwargs.get(dim) is None for dim in ["bo", "ho", "t"]):
+            if kwargs.get("t") is None:
                 raise ValueError("Incomplete dimensions.")
 
-            self._dimensions["bo"] = kwargs["bo"]
-            self._dimensions["ho"] = kwargs["ho"]
+            # Check if outer dimension are complete (if only one dimension is
+            # given, a square is assumed)
+            if kwargs.get("bo") is None:
+                if kwargs.get("ho") is not None:
+                    self._dimensions["bo"] = kwargs["ho"]
+                    self._dimensions["ho"] = kwargs["ho"]
+                else:
+                    raise ValueError("Incomplete dimensions.")
+            else:
+                if kwargs.get("ho") is None:
+                    self._dimensions["bo"] = kwargs["bo"]
+                    self._dimensions["ho"] = kwargs["bo"]
+                else:
+                    self._dimensions["bo"] = kwargs["bo"]
+                    self._dimensions["ho"] = kwargs["ho"]
 
-            self._dimensions["bi"] = kwargs["bo"] - 2*kwargs["t"]
-            self._dimensions["hi"] = kwargs["ho"] - 2*kwargs["t"]
+            self._dimensions["bi"] = self._dimensions["bo"] - 2*kwargs["t"]
+            self._dimensions["hi"] = self._dimensions["ho"] - 2*kwargs["t"]
         elif any(kwargs.get(dim_o) is None for dim_o in ["bo", "ho"]):
             if kwargs.get("t") is None:
                 raise ValueError("Incomplete dimensions.")
 
-            self._dimensions["bi"] = kwargs["bi"]
-            self._dimensions["hi"] = kwargs["hi"]
+            # Check if outer dimension are complete (if only one dimension is
+            # given, a square is assumed)
+            if kwargs.get("bi") is None:
+                if kwargs.get("hi") is not None:
+                    self._dimensions["bi"] = kwargs["hi"]
+                    self._dimensions["hi"] = kwargs["hi"]
+                else:
+                    raise ValueError("Incomplete dimensions.")
+            else:
+                if kwargs.get("hi") is None:
+                    self._dimensions["bi"] = kwargs["bi"]
+                    self._dimensions["hi"] = kwargs["bi"]
+                else:
+                    self._dimensions["bi"] = kwargs["bi"]
+                    self._dimensions["hi"] = kwargs["hi"]
 
-            self._dimensions["bo"] = kwargs["bi"] + 2*kwargs["t"]
-            self._dimensions["ho"] = kwargs["hi"] + 2*kwargs["t"]
+            self._dimensions["bo"] = self._dimensions["bi"] + 2*kwargs["t"]
+            self._dimensions["ho"] = self._dimensions["hi"] + 2*kwargs["t"]
         else:
             self._dimensions["bi"] = kwargs["bi"]
             self._dimensions["hi"] = kwargs["hi"]
