@@ -1,6 +1,5 @@
 """Module with a class for beam elements."""
 import warnings
-from collections.abc import Sequence
 
 import numpy as np
 
@@ -11,10 +10,83 @@ __all__ = ["BeamElement"]
 
 
 class BeamElement():
-    """A flexible beam element."""
+    """A flexible beam element.
 
-    def __init__(self, cross_section, E, G, nu=None, idx=(1, 2),
+    Parameters
+    ----------
+    cross_section : CrossSection
+        The beam cross section.
+    E : int | float | np.number
+        Young's modulus [N/m^2 = Pa].
+    G : int | float | np.number, optional
+        Shear modulus [N/m^2 = Pa]. The default is None.
+    nu : int | float | np.number, optional
+        Poisson's ratio. The default is None.
+    idx : Sequence, optional
+        Global indices of the start and end node of the beam.\n
+        The default is (1, 2).
+    coords : ArrayLike, optional
+        Cartesian coordinates of the start and end node of the beam,
+        specified in the global coordinate system.\n
+        The default is ((0, 0, 0), (1, 0, 0)).
+
+    Raises
+    ------
+    TypeError
+        - If the cross_section is not an instance of the CrossSection
+          class.
+        - If idx is not a Sequence.
+        - If the elements of idx are not integer values.
+    ValueError
+        - If the Young's modulus is not a positive, non-zero scalar numeric
+          value.
+        - If the Poisson's ratio and the shear ratio are both not a
+          positive, non-zero scalar numeric value.
+        - If the elements of idx are not positive & non-zero.
+        - If the coords are not of shape (2, 3) or (3, 2). I.e. if they
+          don't represent 3D cartesion coordinates.
+        - If the start and end node have the same coordinates.
+    """
+
+    def __init__(self, cross_section, E, G=None, nu=None, idx=(1, 2),
                  coords=((0, 0, 0), (1, 0, 0))):
+        """Create a flexible beam element.
+
+        Parameters
+        ----------
+        cross_section : CrossSection
+            The beam cross section.
+        E : int | float | np.number
+            Young's modulus [N/m^2 = Pa].
+        G : int | float | np.number, optional
+            Shear modulus [N/m^2 = Pa]. The default is None.
+        nu : int | float | np.number, optional
+            Poisson's ratio. The default is None.
+        idx : Sequence, optional
+            Global indices of the start and end node of the beam.\n
+            The default is (1, 2).
+        coords : ArrayLike, optional
+            Cartesian coordinates of the start and end node of the beam,
+            specified in the global coordinate system.\n
+            The default is ((0, 0, 0), (1, 0, 0)).
+
+        Raises
+        ------
+        TypeError
+            - If the cross_section is not an instance of the CrossSection
+              class.
+            - If idx is not a Sequence.
+            - If the elements of idx are not integer values.
+        ValueError
+            - If the Young's modulus is not a positive, non-zero scalar numeric
+              value.
+            - If the Poisson's ratio and the shear ratio are both not a
+              positive, non-zero scalar numeric value.
+            - If the elements of idx are not positive & non-zero.
+            - If the coords are not of shape (2, 3) or (3, 2). I.e. if they
+              don't represent 3D cartesion coordinates.
+            - If the start and end node have the same coordinates.
+        """
         if not isinstance(cross_section, CrossSection):
             raise TypeError("Cross section must be a CrossSection instance "
                             "from the direct_stiffness.cross_section module")
@@ -34,12 +106,15 @@ class BeamElement():
                           "poisson's ratio assuming ISOTROPIC material.")
             G = E/2 * (1+nu)
 
-        if not isinstance(idx, Sequence):
-            raise TypeError("idx must be a sequence.")
+        if not isinstance(idx, (tuple, list, np.ndarray)):
+            raise TypeError("idx must be a tuple, list or numpy array.")
         if not len(idx) == 2:
             raise ValueError("idx must be of length 2.")
         if not all(isinstance(idx_i, (int, np.integer)) for idx_i in idx):
             raise TypeError("All elements of idx must be integers")
+        elif not all(idx_i > 0 for idx_i in idx):
+            raise ValueError("All elements of idx must be positive and "
+                            "non-zero.")
 
         coords = utils._validate_arraylike_numeric(coords, ndim=2)
         if not coords.shape == (2, 3):
@@ -89,28 +164,32 @@ class BeamElement():
         """tuple : The beam node indices."""
         return self._idx
 
-    def stiffness_matrix(self, is_3d=True):
-        """Compute the stiffness matrix for a prismatic beam element.
+    def local_stiffness_matrix(self, is_3d=True):
+        """Compute the local stiffness matrix.
+
+        Compute the stiffness matrix of the beam element in the local
+        coordinate system (x-axis defined in the direction from node 1 to
+        node 2).
 
         Parameters
         ----------
-        cross_section : CrossSection
-            Instance of a cross-section class (Rectangle, Circle, Pipe, etc.).
-        E : float
-            Young's modulus of the material.
-        G : float
-            Shear modulus of the material.
-        L : float
-            Length of the beam.
         is_3d : bool, optional
             If True, return the 12x12 3D beam stiffness matrix.
             If False, return the 6x6 2D beam stiffness matrix.
 
+        Raises
+        ------
+        TypeError
+            If is_3d is not a boolean.
+
         Returns
         -------
         K : np.ndarray
-            Global stiffness matrix for the beam element.
+            Local stiffness matrix for the beam element.
         """
+        if not isinstance(is_3d, bool):
+            raise TypeError("is_3d must be boolean.")
+
         A = self.cross_section.area
         Ix = self.cross_section.ix
         Iy = self.cross_section.iy
@@ -180,8 +259,31 @@ class BeamElement():
 
         return K
 
+    def global_stiffness_matrix(self, is_3d=True):
+        """Compute the global stiffness matrix.
+
+        Compute the stiffness matrix of the beam element in the global
+        coordinate system).
+
+        Parameters
+        ----------
+        is_3d : bool, optional
+            If True, return the 12x12 3D beam stiffness matrix.
+            If False, return the 6x6 2D beam stiffness matrix.
+
+        Returns
+        -------
+        K : np.ndarray
+            Global stiffness matrix for the beam element.
+        """
+
+        K_local = self.local_stiffness_matrix(is_3d=is_3d)
+        T = self.rotation_matrix(is_3d=is_3d)
+
+        return T @ K_local @ T.T
+
     def rotation_matrix(self, is_3d=True):
-        """Compute the rotation matrix.
+        """Compute the rotational transformation matrix.
 
         Parameters
         ----------
@@ -190,14 +292,21 @@ class BeamElement():
             If False, compute 6x6 2D rotation matrix.\n
             The default is True.
 
+        Raises
+        ------
+        TypeError
+            If is_3d is not a boolean.
 
         Returns
         -------
-        R : np.ndarray
-            Rotation matrix for transforming element stiffness to global
-            coordinates.
+        T : np.ndarray
+            Rotational transformation matrix for transforming element stiffness
+            to global coordinates.
         """
-        delta = np.diff(self.coords, axis=0)
+        if not isinstance(is_3d, bool):
+            raise TypeError("is_3d must be boolean.")
+
+        delta = np.diff(self.coords, axis=0).flatten()
         lx, ly, lz = delta / self.L
         local_x = np.array([lx, ly, lz])
 
@@ -211,16 +320,24 @@ class BeamElement():
         local_y = local_y / np.linalg.norm(local_y)
         local_z = np.cross(local_x, local_y)
 
-        T = np.vstack([local_x, local_y, local_z])
-
         # Assemble rotation matrix
-        if is_3d:
-            R = np.zeros((12, 12))
-            for i in range(4):
-                R[i*3:(i+1)*3, i*3:(i+1)*3] = T
-        else:
-            R = np.zeros((6, 6))
-            for i in range(2):
-                R[i*3:(i+1)*3, i*3:(i+1)*3] = T
+        # Note that each vector local_<> represents a column in the rotation
+        # matrix. Thus when stacking them as rows, the matrix needs to be
+        # transposed afterwards
+        R = np.vstack([local_x, local_y, local_z]).T
 
-        return R
+        # Assemble transformation matrix
+        # Note that this is the transformation matrix to convert the local
+        # coordinates to the global ones. In the lecture, we used the letter
+        # T for the matrix to transform from global to local coordinates
+        # instead.
+        if is_3d:
+            T = np.zeros((12, 12))
+            for i in range(4):
+                T[i*3:(i+1)*3, i*3:(i+1)*3] = R
+        else:
+            T = np.zeros((6, 6))
+            for i in range(2):
+                T[i*3:(i+1)*3, i*3:(i+1)*3] = R
+
+        return T
