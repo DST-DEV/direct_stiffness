@@ -220,6 +220,8 @@ class BeamElement():
             K[1, 7] = K[7, 1] = -12 * k_flex_z3
             K[1, 5] = K[5, 1] = 6 * k_flex_z2
             K[1, 11] = K[11, 1] = 6 * k_flex_z2
+            K[5, 7] = K[7, 5] = -6 * k_flex_z2
+            K[7, 11] = K[11, 7] = -6 * k_flex_z2
             K[5, 5] = 4 * k_flex_z1
             K[5, 11] = K[11, 5] = 2 * k_flex_z1
             K[11, 11] = 4 * k_flex_z1
@@ -230,6 +232,8 @@ class BeamElement():
             k_flex_y3 = E * Iy / (L**3)
             K[2, 2] = K[8, 8] = 12 * k_flex_y3
             K[2, 8] = K[8, 2] = -12 * k_flex_y3
+            K[4, 8] = K[8, 4] = 6 * k_flex_y2
+            K[8, 10] = K[10, 8] = 6 * k_flex_y2
             K[2, 4] = K[4, 2] = -6 * k_flex_y2
             K[2, 10] = K[10, 2] = -6 * k_flex_y2
             K[4, 4] = 4 * k_flex_y1
@@ -254,6 +258,8 @@ class BeamElement():
             K[1, 4] = K[4, 1] = -12 * k_flex_3
             K[1, 2] = K[2, 1] = 6 * k_flex_2
             K[1, 5] = K[5, 1] = 6 * k_flex_2
+            K[2, 4] = K[4, 2] = -6 * k_flex_2
+            K[4, 5] = K[5, 4] = -6 * k_flex_2
             K[2, 2] = K[5, 5] = 4 * k_flex_1
             K[2, 5] = K[5, 2] = 2 * k_flex_1
 

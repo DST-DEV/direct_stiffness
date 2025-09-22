@@ -21,7 +21,7 @@ class Frame:
         self._node_idx = node_idx
         self._n_nodes = len(np.unique(node_idx))
 
-        self._dof_2d = [[f"u_x{i}", f"u_y{i}", f"theta_z{i}"]
+        self._dof_2d = [[f"u_x{i}", f"u_z{i}", f"theta_y{i}"]
                         for i in range(1, self._n_nodes+1)]
         self._dof_2d = tuple([dof for node_dofs in self._dof_2d
                               for dof in node_dofs])
