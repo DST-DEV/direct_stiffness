@@ -38,7 +38,8 @@ def _validate_numeric(val: int | float | np.number,
 def _validate_arraylike_numeric(arr: ArrayLike, name: str = "",
                                 ndim: int | None = None,
                                 allow_neg: bool = True,
-                                allow_zero: bool = True):
+                                allow_zero: bool = True,
+                                allow_non_finite: bool = False):
     """Validate if a variabe is array-like and contains only numeric values.
 
     Parameters
@@ -59,6 +60,10 @@ def _validate_arraylike_numeric(arr: ArrayLike, name: str = "",
     allow_zero : bool, optional
         Selection whether zeros are allowed in the array.\n
         The default is True.
+    allow_non_finite : bool, optional
+        Selection whether non-finite values (this also includes NaN) are
+        allowed in the array.\n
+        The default is False.
 
     Raises
     ------
@@ -96,6 +101,10 @@ def _validate_arraylike_numeric(arr: ArrayLike, name: str = "",
 
     if not np.issubdtype(arr.dtype, np.number) or not np.isrealobj(arr):
         raise TypeError(f"{name} must contain only numeric values.")
+
+    if not np.all(np.isfinite(arr)):
+        raise ValueError(f"{name} must contain only contain finite, non NaN "
+                         "values.")
 
     if arr.size == 0:
         raise ValueError(f"{name} cannot be empty.")
