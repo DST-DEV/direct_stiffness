@@ -112,22 +112,30 @@ class Frame:
             # Upper left quadrant:
             K[idx_1*n_dof_node:(idx_1+1)*n_dof_node,
               idx_1*n_dof_node:(idx_1+1)*n_dof_node] = \
-                K_beam[0:n_dof_node, 0:n_dof_node]
+                K[idx_1*n_dof_node:(idx_1+1)*n_dof_node,
+                  idx_1*n_dof_node:(idx_1+1)*n_dof_node] \
+                + K_beam[0:n_dof_node, 0:n_dof_node]
 
             # Lower right quadrant:
             K[idx_2*n_dof_node:(idx_2+1)*n_dof_node,
               idx_2*n_dof_node:(idx_2+1)*n_dof_node] = \
-                K_beam[n_dof_node:n_dof_beam, n_dof_node:n_dof_beam]
+                K[idx_2*n_dof_node:(idx_2+1)*n_dof_node,
+                  idx_2*n_dof_node:(idx_2+1)*n_dof_node] \
+                + K_beam[n_dof_node:n_dof_beam, n_dof_node:n_dof_beam]
 
             # Upper right quadrant:
             K[idx_1*n_dof_node:(idx_1+1)*n_dof_node,
               idx_2*n_dof_node:(idx_2+1)*n_dof_node] = \
-                K_beam[0:n_dof_node, n_dof_node:n_dof_beam]
+                K[idx_1*n_dof_node:(idx_1+1)*n_dof_node,
+                  idx_2*n_dof_node:(idx_2+1)*n_dof_node] \
+                + K_beam[0:n_dof_node, n_dof_node:n_dof_beam]
 
             # Lower left quadrant:
             K[idx_2*n_dof_node:(idx_2+1)*n_dof_node,
               idx_1*n_dof_node:(idx_1+1)*n_dof_node] = \
-                K_beam[n_dof_node:n_dof_beam, 0:n_dof_node]
+                K[idx_2*n_dof_node:(idx_2+1)*n_dof_node,
+                  idx_1*n_dof_node:(idx_1+1)*n_dof_node] \
+                + K_beam[n_dof_node:n_dof_beam, 0:n_dof_node]
 
         return K
 
