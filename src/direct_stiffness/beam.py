@@ -191,8 +191,8 @@ class BeamElement():
             raise TypeError("is_3d must be boolean.")
 
         A = self.cross_section.area
-        Ix = self.cross_section.ix
         Iy = self.cross_section.iy
+        Iz = self.cross_section.iz
         J = self.cross_section.j
         L = self.L
         E = self.E
@@ -212,10 +212,10 @@ class BeamElement():
             K[3, 3] = K[9, 9] = k_torsion
             K[3, 9] = K[9, 3] = -k_torsion
 
-            # Bending about z-axis (Ix)
-            k_flex_z1 = E * Ix / L
-            k_flex_z2 = E * Ix / (L**2)
-            k_flex_z3 = E * Ix / (L**3)
+            # Bending about z-axis (Iz)
+            k_flex_z1 = E * Iz / L
+            k_flex_z2 = E * Iz / (L**2)
+            k_flex_z3 = E * Iz / (L**3)
             K[1, 1] = K[7, 7] = 12 * k_flex_z3
             K[1, 7] = K[7, 1] = -12 * k_flex_z3
             K[1, 5] = K[5, 1] = 6 * k_flex_z2
@@ -245,9 +245,9 @@ class BeamElement():
             K = np.zeros((6, 6))
 
             k_axial = E * A / L
-            k_flex_1 = E * Ix / L
-            k_flex_2 = E * Ix / (L**2)
-            k_flex_3 = E * Ix / (L**3)
+            k_flex_1 = E * Iz / L
+            k_flex_2 = E * Iz / (L**2)
+            k_flex_3 = E * Iz / (L**3)
 
             # Axial
             K[0, 0] = K[3, 3] = k_axial

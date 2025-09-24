@@ -39,12 +39,12 @@ class CrossSection():
         """float: Cross-sectional area."""
 
     @abstractmethod
-    def ix(self):
-        """float: Moment of inertia about x-axis."""
-
-    @property
     def iy(self):
         """float: Moment of inertia about y-axis."""
+
+    @property
+    def iz(self):
+        """float: Moment of inertia about z-axis."""
 
     @property
     def j(self):
@@ -91,16 +91,16 @@ class Rectangle(CrossSection):
         return b * h
 
     @property
-    def ix(self):
-        """float: Moment of inertia about x-axis."""
-        b, h = self.dimensions["b"], self.dimensions["h"]
-        return (b * h**3) / 12
-
-    @property
     def iy(self):
         """float: Moment of inertia about y-axis."""
         b, h = self.dimensions["b"], self.dimensions["h"]
         return (h * b**3) / 12
+
+    @property
+    def iz(self):
+        """float: Moment of inertia about z-axis."""
+        b, h = self.dimensions["b"], self.dimensions["h"]
+        return (b * h**3) / 12
 
     @property
     def j(self):
@@ -135,15 +135,15 @@ class Circle(CrossSection):
         return np.pi * (d**2) / 64
 
     @property
-    def ix(self):
-        """float: Moment of inertia about x-axis."""
+    def iy(self):
+        """float: Moment of inertia about y-axis."""
         d = self.dimensions["d"]
         return (np.pi * d**4) / 64
 
     @property
-    def iy(self):
-        """float: Moment of inertia about y-axis (same as Ix)."""
-        return self.ix
+    def iz(self):
+        """float: Moment of inertia about z-axis (same as Iy)."""
+        return self.iy
 
     @property
     def j(self):
@@ -200,15 +200,15 @@ class Pipe(CrossSection):
         return np.pi * (do**2 - di**2) / 4
 
     @property
-    def ix(self):
-        """float: Moment of inertia about x-axis."""
+    def iy(self):
+        """float: Moment of inertia about y-axis."""
         do, di = self.dimensions["do"], self.dimensions["di"]
         return (np.pi / 64) * (do**4 - di**4)
 
     @property
-    def iy(self):
-        """float: Moment of inertia about y-axis (same as Ix)."""
-        return self.ix
+    def iz(self):
+        """float: Moment of inertia about z-axis (same as Iy)."""
+        return self.iy
 
     @property
     def j(self):
@@ -302,8 +302,8 @@ class RectangularPipe(CrossSection):
         return bo * ho - bi * hi
 
     @property
-    def ix(self):
-        """float: Moment of inertia about x-axis."""
+    def iy(self):
+        """float: Moment of inertia about y-axis."""
         bi = self.dimensions["bi"]
         hi = self.dimensions["hi"]
         bo = self.dimensions["bo"]
@@ -311,8 +311,8 @@ class RectangularPipe(CrossSection):
         return (bo**3 * ho - bi**3 * hi)/12
 
     @property
-    def iy(self):
-        """float: Moment of inertia about y-axis."""
+    def iz(self):
+        """float: Moment of inertia about z-axis."""
         bi = self.dimensions["bi"]
         hi = self.dimensions["hi"]
         bo = self.dimensions["bo"]
