@@ -5,17 +5,17 @@ from direct_stiffness.beam import BeamElement
 from direct_stiffness.system import Frame
 
 
-# Define coordinates of nodes (in mm)
-A = (400, 0, 0)
-B = (400, 500, 0)
-C = (0, 500, 0)
+# Define coordinates of nodes (in m)
+A = (.4, 0, 0)
+B = (.4, .5, 0)
+C = (0, .5, 0)
 D = E= (0, 0, 0)
-F = (-1000, 0, 0)
+F = (-1, 0, 0)
 
 # Create cross sections
-s = 45  # Outer width of the square profile [mm]
-t = 4  # Wall thickness of the square profile [mm]
-d = 36  # Diameter of the circular profile [mm]
+s = 45e-3  # Outer width of the square profile [m]
+t = 4e-3  # Wall thickness of the square profile [m]
+d = 36e-3  # Diameter of the circular profile [m]
 
 circle_profile = Circle(d=d)
 square_profile = RectangularPipe(bo=s, t=t)

@@ -104,7 +104,7 @@ class BeamElement():
             # Calculate shear modulus assuming isotropic material
             warnings.warn("Shear modulus calculated from young's modulus and "
                           "poisson's ratio assuming ISOTROPIC material.")
-            G = E/2 * (1+nu)
+            G = E/2/(1+nu)
 
         if not isinstance(idx, (tuple, list, np.ndarray)):
             raise TypeError("idx must be a tuple, list or numpy array.")
