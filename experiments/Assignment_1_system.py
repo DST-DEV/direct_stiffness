@@ -48,3 +48,4 @@ F[2] = [0, 0, P/2, 0, -P*beam_BC.L/8, 0]  # Forces on node C
 
 U, R = frame.solve_fea_system(F=F.flatten(), fixed_dofs=fixed_dofs, is_3d=True)
 U = U.reshape((frame.n_nodes, 6))
+R = R.reshape((frame.n_nodes, 6))
